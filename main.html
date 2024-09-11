@@ -6,6 +6,7 @@
     <title>Movie Search</title>
 
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="adaptive.css">
 </head>
 <body>
 
@@ -18,7 +19,12 @@
         </select>
         <button id="searchButton">Search</button>
     </div>
+
+    <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+
     <div id="results"></div>
+    <div class="moreButton"><button id="moreButton" style="display:none;">More</button></div>
+    
 
     <script src="script.js"></script>
 </body>

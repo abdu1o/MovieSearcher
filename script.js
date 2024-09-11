@@ -19,7 +19,26 @@ class MovieService {
     }
 }
 
+class LoadingSpinner {
+    constructor(spinnerId) {
+        this.spinner = document.getElementById(spinnerId);
+    }
+
+    show() {
+        this.spinner.style.display = 'block';
+    }
+
+    hide() {
+        this.spinner.style.display = 'none';
+    }
+}
+
 const movieService = new MovieService('57c07217');
+let currentPage = 1;
+let currentTitle = '';
+let currentType = '';
+
+const loadingSpinner = new LoadingSpinner('loadingSpinner');
 
 async function handleSearch() {
     const movieTitle = document.getElementById('movieTitle').value;
@@ -30,18 +49,34 @@ async function handleSearch() {
         return;
     }
 
+    currentPage = 1;
+    currentTitle = movieTitle;
+    currentType = movieType;
+
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '';
+    document.getElementById('moreButton').style.display = 'none';
+
+    await loadMovies();
+}
+
+async function loadMovies() {
+    const resultsDiv = document.getElementById('results');
 
     try {
-        const data = await movieService.search(movieTitle, movieType);
+        loadingSpinner.show();
+
+        const data = await movieService.search(currentTitle, currentType, currentPage);
+
+        loadingSpinner.hide();
+
         if (data.Response === 'True') {
             data.Search.forEach(movie => {
                 const movieItem = document.createElement('div');
                 movieItem.classList.add('movie-item');
                 movieItem.innerHTML = `
                     <h3>${movie.Title} (${movie.Year})</h3>
-                    <img src="${movie.Poster}" alt="${movie.Title} Poster">
+                    <img src="${movie.Poster}" alt="Title doesn't have a poster" style="color: white;">
                     <button class="details-button" data-imdbid="${movie.imdbID}">Details</button>
                     <div class="movie-details" id="details-${movie.imdbID}" style="display: none;"></div>
                 `;
@@ -56,7 +91,8 @@ async function handleSearch() {
                     if (detailsDiv.innerHTML !== '') {
                         if (detailsDiv.style.display === 'none') {
                             detailsDiv.style.display = 'block';
-                        } else {
+                        } 
+                        else {
                             detailsDiv.style.display = 'none';
                         }
                         return;
@@ -66,27 +102,46 @@ async function handleSearch() {
                         const detailsData = await movieService.getMovie(imdbID);
                         if (detailsData.Response === 'True') {
                             detailsDiv.innerHTML = `
-                                <p><strong>Director:</strong> ${detailsData.Director}</p>
-                                <p><strong>Actors:</strong> ${detailsData.Actors}</p>
-                                <p><strong>Plot:</strong> ${detailsData.Plot}</p>
-                                <p><strong>Runtime:</strong> ${detailsData.Runtime}</p>
+                                <p style="color: white;"><strong>Director:</strong> ${detailsData.Director}</p>
+                                <p style="color: white;"><strong>Actors:</strong> ${detailsData.Actors}</p>
+                                <p style="color: white;"><strong>Plot:</strong> ${detailsData.Plot}</p>
+                                <p style="color: white;"><strong>Runtime:</strong> ${detailsData.Runtime}</p>
                             `;
                             detailsDiv.style.display = 'block';
-                        } else {
+                        } 
+                        else {
                             detailsDiv.innerHTML = '<p>Details not found!</p>';
                             detailsDiv.style.display = 'block';
                         }
-                    } catch (error) {
+                    } 
+                    catch (error) {
                         detailsDiv.innerHTML = '<p>Error loading details</p>';
                     }
                 });
             });
-        } else {
-            resultsDiv.innerHTML = '<p>Movie not found!</p>';
+
+            if (data.totalResults > currentPage * 10) {
+                document.getElementById('moreButton').style.display = 'block';
+            } 
+            else {
+                document.getElementById('moreButton').style.display = 'none';
+            }
+
+            currentPage++;
+        } 
+
+        else {
+            if (currentPage === 1) {
+                resultsDiv.innerHTML = '<p>Movie not found!</p>';
+            }
+            document.getElementById('moreButton').style.display = 'none';
         }
-    } catch (error) {
+    } 
+    catch (error) {
+        loadingSpinner.hide();
         resultsDiv.innerHTML = '<p>Error during search</p>';
     }
 }
 
 document.getElementById('searchButton').addEventListener('click', handleSearch);
+document.getElementById('moreButton').addEventListener('click', loadMovies);
